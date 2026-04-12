@@ -12,11 +12,10 @@
 
 ### Prerequisites
 
-Install [mise](https://mise.jdx.dev/getting-started.html) if you don't have it yet.
+Install [mise](https://mise.jdx.dev/getting-started.html) if you don't have it yet. After installing, make sure to [activate it in your shell](https://mise.jdx.dev/getting-started.html#2-activate-mise).
 
 ### Setup
 
 ```bash
-mise install          # installs Tuist (version pinned in .mise.toml)
 mise run generate     # resolves dependencies and generates the Xcode project
 ```
