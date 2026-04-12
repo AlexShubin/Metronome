@@ -75,11 +75,8 @@ class MetronomeEngine: MetronomeEngineType {
     private func generateBuffer(bpm: Double, clickSample: ClickSample) -> AVAudioPCMBuffer {
         let beatLength = AVAudioFrameCount(AVAudioFormat.standard.sampleRate * 60 / bpm)
 
-        let regularFile = try! AVAudioFile(forReading: clickSample.regularFile)
-        let accentedFile = try! AVAudioFile(forReading: clickSample.accentedFile)
-
-        let accentedClickSamples = readSamples(from: accentedFile, beatLength: beatLength)
-        let mainClickSamples = readSamples(from: regularFile, beatLength: beatLength)
+        let accentedClickSamples = readSamples(from: clickSample.accentedFile, beatLength: beatLength)
+        let mainClickSamples = readSamples(from: clickSample.regularFile, beatLength: beatLength)
 
         var barSamples = accentedClickSamples
         for _ in 1...3 {
