@@ -12,7 +12,7 @@
 
 ### Prerequisites
 
-Install [mise](https://mise.jdx.dev/getting-started.html) if you don't have it yet. After installing, make sure to [activate it in your shell](https://mise.jdx.dev/getting-started.html#2-activate-mise).
+Install [mise](https://mise.jdx.dev/getting-started.html) if you don't have it yet. After installing, make sure to [activate it in your shell](https://mise.jdx.dev/getting-started.html#activate-mise).
 
 ### Setup
 
