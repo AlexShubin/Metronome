@@ -38,7 +38,7 @@ struct MetronomeTests {
 
         #expect(state?.isPlaying == true)
         #expect(mockEngine.calls == [
-            .play(bpm: 120)
+            .play(bpm: 120, clickSample: .classic)
         ])
         #expect(mockDisplayLink.calls == [
             .resume
@@ -52,7 +52,7 @@ struct MetronomeTests {
 
         #expect(state?.isPlaying == false)
         #expect(mockEngine.calls == [
-            .play(bpm: 120), .stop
+            .play(bpm: 120, clickSample: .classic), .stop
         ])
         #expect(mockDisplayLink.calls == [
             .resume, .pause
@@ -72,7 +72,7 @@ struct MetronomeTests {
         await sut.changeTempo(to: 180)
 
         #expect(mockEngine.calls == [
-            .play(bpm: 120), .play(bpm: 180)
+            .play(bpm: 120, clickSample: .classic), .play(bpm: 180, clickSample: .classic)
         ])
     }
 

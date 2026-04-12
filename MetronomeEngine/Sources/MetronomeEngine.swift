@@ -10,9 +10,11 @@ import AVFoundation
 
 protocol MetronomeEngineType {
     /// Starts the metronome.
-    /// - Parameter bpm: Tempo. Beats per minute.
+    /// - Parameters:
+    ///   - bpm: Tempo. Beats per minute.
+    ///   - clickSample: The click sample to use.
     /// - Returns: Returns the bar length in frames, so later on we can understand the position of the player within the bar.
-    func play(bpm: Double) -> BarLength
+    func play(bpm: Double, clickSample: ClickSample) -> BarLength
 
     func stop()
 
@@ -25,23 +27,17 @@ typealias BarLength = Double
 
 class MetronomeEngine: MetronomeEngineType {
     private let audioPlayerNode: AVAudioPlayerNode
-    private let audioFileMainClick: AVAudioFile
-    private let audioFileAccentedClick: AVAudioFile
     private let audioEngine: AVAudioEngine
 
     init() {
-        let mainClickFile = Bundle.module.url(forResource: "Low", withExtension: "wav")!
-        let accentedClickFile = Bundle.module.url(forResource: "High", withExtension: "wav")!
-
-        audioFileMainClick = try! AVAudioFile(forReading: mainClickFile)
-        audioFileAccentedClick = try! AVAudioFile(forReading: accentedClickFile)
-        
         audioPlayerNode = AVAudioPlayerNode()
-        
+
         audioEngine = AVAudioEngine()
         audioEngine.attach(self.audioPlayerNode)
-        
-        audioEngine.connect(audioPlayerNode, to: audioEngine.mainMixerNode, format: audioFileMainClick.processingFormat)
+
+        audioEngine.connect(audioPlayerNode,
+                            to: audioEngine.mainMixerNode,
+                            format: .standard)
         try! audioEngine.start()
     }
 
@@ -49,15 +45,15 @@ class MetronomeEngine: MetronomeEngineType {
         audioPlayerNode.stop()
     }
 
-    func play(bpm: Double) -> BarLength {
-        let buffer = generateBuffer(bpm: bpm)
-        
+    func play(bpm: Double, clickSample: ClickSample) -> BarLength {
+        let buffer = generateBuffer(bpm: bpm, clickSample: clickSample)
+
         if audioPlayerNode.isPlaying {
             audioPlayerNode.stop()
         }
-        
+
         audioPlayerNode.play()
-        
+
         audioPlayerNode.scheduleBuffer(
             buffer,
             at: nil,
@@ -76,38 +72,38 @@ class MetronomeEngine: MetronomeEngineType {
         return Double(playerTime.sampleTime)
     }
 
-    private func generateBuffer(bpm: Double) -> AVAudioPCMBuffer {
-        audioFileMainClick.framePosition = 0
-        audioFileAccentedClick.framePosition = 0
-        
-        let format = audioFileMainClick.processingFormat
-        let beatLength = AVAudioFrameCount(format.sampleRate * 60 / bpm)
-        let channelCount = Int(format.channelCount)
+    private func generateBuffer(bpm: Double, clickSample: ClickSample) -> AVAudioPCMBuffer {
+        let beatLength = AVAudioFrameCount(AVAudioFormat.standard.sampleRate * 60 / bpm)
 
-        let accentedClickSamples = readSamples(from: audioFileAccentedClick, format: format, beatLength: beatLength)
-        let mainClickSamples = readSamples(from: audioFileMainClick, format: format, beatLength: beatLength)
+        let regularFile = try! AVAudioFile(forReading: clickSample.regularFile)
+        let accentedFile = try! AVAudioFile(forReading: clickSample.accentedFile)
+
+        let accentedClickSamples = readSamples(from: accentedFile, beatLength: beatLength)
+        let mainClickSamples = readSamples(from: regularFile, beatLength: beatLength)
 
         var barSamples = accentedClickSamples
         for _ in 1...3 {
             barSamples.append(contentsOf: mainClickSamples)
         }
 
-        let bufferBar = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 4 * beatLength)!
+        let bufferBar = AVAudioPCMBuffer(pcmFormat: .standard, frameCapacity: 4 * beatLength)!
         bufferBar.frameLength = 4 * beatLength
         bufferBar.floatChannelData!.pointee.update(from: barSamples,
-                                                   count: channelCount * Int(bufferBar.frameLength))
+                                                   count: Int(bufferBar.frameLength))
         return bufferBar
     }
 
     private func readSamples(
         from file: AVAudioFile,
-        format: AVAudioFormat,
         beatLength: AVAudioFrameCount
     ) -> [Float] {
-        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: beatLength)!
+        let buffer = AVAudioPCMBuffer(pcmFormat: .standard, frameCapacity: beatLength)!
         try! file.read(into: buffer)
         buffer.frameLength = beatLength
-        let sampleCount = Int(format.channelCount) * Int(beatLength)
-        return Array(UnsafeBufferPointer(start: buffer.floatChannelData![0], count: sampleCount))
+        return Array(UnsafeBufferPointer(start: buffer.floatChannelData![0], count: Int(beatLength)))
     }
+}
+
+private extension AVAudioFormat {
+    static let standard = AVAudioFormat(standardFormatWithSampleRate: 48000, channels: 1)!
 }

@@ -75,7 +75,7 @@ actor Metronome: MetronomeType {
 
     func play() {
         metronomeState.isPlaying = true
-        barLength = metronomeEngine.play(bpm: metronomeState.tempo)
+        barLength = metronomeEngine.play(bpm: metronomeState.tempo, clickSample: .classic)
         displayLink.resume()
     }
 
@@ -88,7 +88,7 @@ actor Metronome: MetronomeType {
     func changeTempo(to bpm: Double) {
         metronomeState.tempo = bpm
         if metronomeState.isPlaying {
-            barLength = metronomeEngine.play(bpm: metronomeState.tempo)
+            barLength = metronomeEngine.play(bpm: metronomeState.tempo, clickSample: .classic)
             displayLink.resume()
         }
     }

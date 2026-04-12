@@ -11,7 +11,7 @@
 final class MockMetronomeEngine: MetronomeEngineType, @unchecked Sendable {
 
     enum Call: Equatable {
-        case play(bpm: Double)
+        case play(bpm: Double, clickSample: ClickSample)
         case stop
     }
     // Safety: only mutated from the Metronome actor's isolation in tests.
@@ -19,8 +19,8 @@ final class MockMetronomeEngine: MetronomeEngineType, @unchecked Sendable {
     var stubbedBarLength: Double = 100
     var stubbedSampleTime: Double = 0
 
-    func play(bpm: Double) -> BarLength {
-        calls.append(.play(bpm: bpm))
+    func play(bpm: Double, clickSample: ClickSample) -> BarLength {
+        calls.append(.play(bpm: bpm, clickSample: clickSample))
         return stubbedBarLength
     }
 
