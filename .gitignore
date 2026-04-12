@@ -12,9 +12,6 @@ Tuist/.build
 # Build
 buildServer.json
 
-# Claude Code
-.claude/
-
 # Misc
 .DS_Store
 *.moved-aside
