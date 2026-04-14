@@ -7,7 +7,7 @@
 //  Copyright © 2026 Alex Shubin. All rights reserved.
 //
 
-public enum ClickSample {
+public enum ClickSample: Sendable, Equatable {
     case classic
     case digital
     case logicStyle

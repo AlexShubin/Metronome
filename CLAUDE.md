@@ -32,6 +32,7 @@
   //
   ```
 - Avoid using `any` with protocol types when it's not required. Prefer `let sut: MetronomeViewModelType` over `let sut: any MetronomeViewModelType`.
+- Avoid copy-pasted logic. Extract repeated lines (e.g. multi-step sequences shared across methods) into a private helper function.
 
 ## Naming Conventions
 

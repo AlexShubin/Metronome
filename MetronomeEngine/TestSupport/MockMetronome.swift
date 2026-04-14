@@ -14,6 +14,7 @@ public actor MockMetronome: MetronomeType {
         case play
         case stop
         case changeTempo(bpm: Double)
+        case changeClickSample(clickSample: ClickSample)
     }
 
     public private(set) var calls = [Call]()
@@ -35,6 +36,10 @@ public actor MockMetronome: MetronomeType {
 
     public func changeTempo(to bpm: Double) {
         calls.append(.changeTempo(bpm: bpm))
+    }
+
+    public func changeClickSample(to clickSample: ClickSample) {
+        calls.append(.changeClickSample(clickSample: clickSample))
     }
 
     public nonisolated func sendState(_ state: MetronomeState) {
