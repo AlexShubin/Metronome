@@ -10,6 +10,7 @@ public protocol MetronomeType: Actor {
     func play()
     func stop()
     func changeTempo(to bpm: Double)
+    func changeClickSample(to clickSample: ClickSample)
 
     var metronomeStateStream: AsyncStream<MetronomeState> { get }
 }
@@ -18,11 +19,18 @@ public struct MetronomeState: Sendable {
     public var tempo: Double
     public var isPlaying: Bool
     public var progressWithinBar: Double
+    public var clickSample: ClickSample
 
-    public init(tempo: Double, isPlaying: Bool, progressWithinBar: Double) {
+    public init(
+        tempo: Double,
+        isPlaying: Bool,
+        progressWithinBar: Double,
+        clickSample: ClickSample = .classic
+    ) {
         self.tempo = tempo
         self.isPlaying = isPlaying
         self.progressWithinBar = progressWithinBar
+        self.clickSample = clickSample
     }
 }
 
@@ -38,7 +46,8 @@ actor Metronome: MetronomeType {
     private var metronomeState = MetronomeState(
         tempo: 120,
         isPlaying: false,
-        progressWithinBar: 0
+        progressWithinBar: 0,
+        clickSample: .classic
     ) {
         didSet {
             metronomeStateContinuation.yield(metronomeState)
@@ -75,8 +84,7 @@ actor Metronome: MetronomeType {
 
     func play() {
         metronomeState.isPlaying = true
-        barLength = metronomeEngine.play(bpm: metronomeState.tempo, clickSample: .classic)
-        displayLink.resume()
+        startPlayback()
     }
 
     func stop() {
@@ -88,8 +96,19 @@ actor Metronome: MetronomeType {
     func changeTempo(to bpm: Double) {
         metronomeState.tempo = bpm
         if metronomeState.isPlaying {
-            barLength = metronomeEngine.play(bpm: metronomeState.tempo, clickSample: .classic)
-            displayLink.resume()
+            startPlayback()
         }
+    }
+
+    func changeClickSample(to clickSample: ClickSample) {
+        metronomeState.clickSample = clickSample
+        if metronomeState.isPlaying {
+            startPlayback()
+        }
+    }
+
+    private func startPlayback() {
+        barLength = metronomeEngine.play(bpm: metronomeState.tempo, clickSample: metronomeState.clickSample)
+        displayLink.resume()
     }
 }

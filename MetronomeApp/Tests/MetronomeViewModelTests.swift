@@ -57,8 +57,7 @@ struct MetronomeViewModelTests {
     @Test func playStopTapped_whenStopped_callsPlay() async {
         await sut.accept(action: .playStopTapped)
 
-        let calls = await mockMetronome.calls
-        #expect(calls == [.play])
+        #expect(await mockMetronome.calls == [.play])
     }
 
     @Test func playStopTapped_whenPlaying_callsStop() async {
@@ -68,15 +67,19 @@ struct MetronomeViewModelTests {
 
         await sut.accept(action: .playStopTapped)
 
-        let calls = await mockMetronome.calls
-        #expect(calls == [.stop])
+        #expect(await mockMetronome.calls == [.stop])
     }
 
     @Test func tempoChanged_callsChangeTempo() async {
         await sut.accept(action: .tempoChanged(tempo: 180))
 
-        let calls = await mockMetronome.calls
-        #expect(calls == [.changeTempo(bpm: 180)])
+        #expect(await mockMetronome.calls == [.changeTempo(bpm: 180)])
+    }
+    
+    @Test func clickSampleChanged_callsChangeClickSample() async {
+        await sut.accept(action: .clickSampleChanged(clickSample: .digital))
+
+        #expect(await mockMetronome.calls == [.changeClickSample(clickSample: .digital)])
     }
 
     @Test func settingsTapped_setsDestination() async {

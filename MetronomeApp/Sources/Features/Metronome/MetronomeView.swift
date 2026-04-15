@@ -34,6 +34,15 @@ struct MetronomeView: View {
                         Task { await viewModel.accept(action: .playStopTapped) }
                     }
                 }
+
+                ClickSamplePicker(
+                    selection: Binding(
+                        get: { viewModel.state.clickSample },
+                        set: { newSample in
+                            Task { await viewModel.accept(action: .clickSampleChanged(clickSample: newSample)) }
+                        }
+                    )
+                )
             }
             .padding()
             .toolbar {
@@ -78,11 +87,13 @@ struct MetronomeViewState: Equatable {
     }
 
     var tempo: Int
+    var clickSample: ClickSampleViewState
     var beats: [Beat]
     var playButtonState: PlayButtonViewState
 
     static let initial = MetronomeViewState(
         tempo: 120,
+        clickSample: .classic,
         beats: [
             .init(id: 0, highlighted: false),
             .init(id: 1, highlighted: false),
@@ -99,6 +110,7 @@ struct MetronomeViewState: Equatable {
 private class PreviewMetronomeViewModel: MetronomeViewModelType {
     var state = MetronomeViewState(
         tempo: 120,
+        clickSample: .classic,
         beats: [
             .init(id: 0, highlighted: true),
             .init(id: 1, highlighted: false),

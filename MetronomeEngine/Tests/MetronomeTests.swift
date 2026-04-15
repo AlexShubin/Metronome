@@ -82,6 +82,29 @@ struct MetronomeTests {
         #expect(mockEngine.calls == [])
     }
 
+    @Test func changeClickSample_updatesClickSampleInState() async {
+        await sut.changeClickSample(to: .digital)
+        let state = await sut.metronomeStateStream.dropFirst().next()
+
+        #expect(state?.clickSample == .digital)
+    }
+
+    @Test func changeClickSample_whilePlaying_restartsEngine() async {
+        await sut.play()
+
+        await sut.changeClickSample(to: .digital)
+
+        #expect(mockEngine.calls == [
+            .play(bpm: 120, clickSample: .classic), .play(bpm: 120, clickSample: .digital)
+        ])
+    }
+
+    @Test func changeClickSample_whileStopped_doesNotRestartEngine() async {
+        await sut.changeClickSample(to: .digital)
+
+        #expect(mockEngine.calls == [])
+    }
+
     @Test func stateStream_emitsOnPlay() async {
         await sut.play()
         let state = await sut.metronomeStateStream.dropFirst().next()

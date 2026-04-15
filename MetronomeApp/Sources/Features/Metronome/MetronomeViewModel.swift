@@ -12,6 +12,7 @@ import MetronomeEngine
 
 enum MetronomeViewModelAction {
     case tempoChanged(tempo: Int)
+    case clickSampleChanged(clickSample: ClickSampleViewState)
     case playStopTapped
     case settingsTapped
 }
@@ -64,6 +65,8 @@ class MetronomeViewModel: MetronomeViewModelType {
         switch action {
         case .tempoChanged(let tempo):
             await metronome.changeTempo(to: Double(tempo))
+        case .clickSampleChanged(let clickSample):
+            await metronome.changeClickSample(to: ClickSample(clickSample))
         case .playStopTapped:
             switch state.playButtonState {
             case .stop: await metronome.stop()
@@ -78,6 +81,7 @@ class MetronomeViewModel: MetronomeViewModelType {
 private extension MetronomeViewState {
     init(_ metronomeState: MetronomeState) {
         tempo = Int(metronomeState.tempo)
+        clickSample = ClickSampleViewState(metronomeState.clickSample)
         playButtonState = metronomeState.isPlaying ? .stop : .play
         beats = if metronomeState.isPlaying {
             [
@@ -88,6 +92,26 @@ private extension MetronomeViewState {
             ]
         } else {
             MetronomeViewState.initial.beats
+        }
+    }
+}
+
+private extension ClickSampleViewState {
+    init(_ clickSample: ClickSample) {
+        switch clickSample {
+        case .classic: self = .classic
+        case .digital: self = .digital
+        case .logicStyle: self = .logicStyle
+        }
+    }
+}
+
+private extension ClickSample {
+    init(_ viewState: ClickSampleViewState) {
+        switch viewState {
+        case .classic: self = .classic
+        case .digital: self = .digital
+        case .logicStyle: self = .logicStyle
         }
     }
 }
