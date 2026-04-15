@@ -112,7 +112,7 @@ struct MetronomeViewModelTests {
         await sendState(
             MetronomeState(tempo: 120, isPlaying: false, progressWithinBar: 0.5)
         )
-        
+
         #expect(sut.state.beats == MetronomeViewState.initial.beats)
     }
 }
