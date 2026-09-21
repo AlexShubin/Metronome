@@ -21,7 +21,7 @@ struct MetronomeView: View {
                 }
                 .frame(height: 80)
                 .task(id: context.date) {
-                    await viewModel.accept(action: .tick)
+                    viewModel.tick()
                 }
             }
 
@@ -29,12 +29,12 @@ struct MetronomeView: View {
                 DraggableTempoControl(
                     tempo: .init(
                         get: { viewModel.tempo },
-                        set: { newTempo in Task { await viewModel.accept(action: .tempoChanged(tempo: newTempo)) } }
+                        set: { newTempo in viewModel.tempoChanged(tempo: newTempo) }
                     ),
                     range: 40...240
                 )
                 PlayButton(state: viewModel.playButtonState) {
-                    Task { await viewModel.accept(action: .playStopTapped) }
+                    viewModel.playStopTapped()
                 }
             }
 
@@ -42,7 +42,7 @@ struct MetronomeView: View {
                 selection: Binding(
                     get: { viewModel.clickSample },
                     set: { newSample in
-                        Task { await viewModel.accept(action: .clickSampleChanged(clickSample: newSample)) }
+                        viewModel.clickSampleChanged(clickSample: newSample)
                     }
                 )
             )
@@ -66,18 +66,12 @@ struct MetronomeView: View {
     }
 }
 
-// MARK: - View State
-
 struct Beat: Identifiable, Equatable {
     let id: Int
     let highlighted: Bool
 }
 
 extension [Beat] {
-    static var idle: [Beat] {
-        bar(highlighting: nil)
-    }
-
     static func bar(highlighting beat: Int?) -> [Beat] {
         (0..<BeatsPerBar.value).map { Beat(id: $0, highlighted: $0 == beat) }
     }
