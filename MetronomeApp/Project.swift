@@ -12,6 +12,7 @@ let project = Project(
             "SWIFT_APPROACHABLE_CONCURRENCY": "YES",
             "ENABLE_USER_SCRIPT_SANDBOXING": "YES",
             "CODE_SIGN_STYLE": "Automatic",
+            "CODE_SIGN_IDENTITY": "Apple Development",
             "DEVELOPMENT_TEAM": "RBNKHS73S3",
         ],
         configurations: [
@@ -45,7 +46,6 @@ let project = Project(
                     "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
                     "ENABLE_APP_SANDBOX": "YES",
                     "ENABLE_HARDENED_RUNTIME": "YES",
-                    "CODE_SIGN_IDENTITY": "Apple Development",
                     "PRODUCT_NAME": "Metronome",
                     "PRODUCT_MODULE_NAME": "MetronomeApp",
                     "MARKETING_VERSION": .string(appVersion),

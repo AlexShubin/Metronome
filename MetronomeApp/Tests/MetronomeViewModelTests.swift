@@ -7,112 +7,203 @@
 //
 
 import Testing
-import Observation
-import MetronomeEngine
-import MetronomeEngineTestSupport
 @testable import MetronomeApp
 
 @Suite @MainActor
 struct MetronomeViewModelTests {
-    let mockMetronome: MockMetronome
-    let sut: MetronomeViewModelType
+    var engineMock: MetronomeEngineMock!
+    var sut: MetronomeViewModelType!
 
     init() {
-        mockMetronome = .init()
-        sut = MetronomeViewModel(metronome: mockMetronome)
+        engineMock = MetronomeEngineMock()
     }
 
-    // MARK: - Helpers
-
-    private func sendState(_ state: MetronomeState) async {
-        await withCheckedContinuation { continuation in
-            withObservationTracking {
-                _ = sut.state
-            } onChange: {
-                continuation.resume()
-            }
-            mockMetronome.sendState(state)
-        }
+    mutating func createSut() {
+        sut = MetronomeViewModel(engine: engineMock)
     }
 
-    // MARK: - Tests
+    // MARK: - Initial state
 
-    @Test func initialState() {
-        #expect(sut.state == .initial)
+    @Test
+    mutating func initialState() {
+        createSut()
+
+        #expect(sut.tempo == 120)
+        #expect(sut.clickSample == .classic)
+        #expect(sut.playButtonState == .play)
+        #expect(sut.beats == [
+            Beat(id: 0, highlighted: false),
+            Beat(id: 1, highlighted: false),
+            Beat(id: 2, highlighted: false),
+            Beat(id: 3, highlighted: false),
+        ])
     }
 
-    @Test func stateUpdates_onMetronomeStateChange() async {
-        await sendState(
-            MetronomeState(tempo: 140, isPlaying: true, progressWithinBar: 0.3)
-        )
+    // MARK: - Play and stop
 
-        #expect(sut.state.tempo == 140)
-        #expect(sut.state.playButtonState == .stop)
-        #expect(sut.state.beats[0].highlighted == false)
-        #expect(sut.state.beats[1].highlighted == true)
-        #expect(sut.state.beats[2].highlighted == false)
-        #expect(sut.state.beats[3].highlighted == false)
+    @Test
+    mutating func playStopTapped_whenStopped_startsPlayback() {
+        createSut()
+
+        sut.playStopTapped()
+
+        #expect(sut.playButtonState == .stop)
+        #expect(engineMock.calls == [.play(bpm: 120, clickSample: .classic)])
     }
 
-    @Test func playStopTapped_whenStopped_callsPlay() async {
-        await sut.accept(action: .playStopTapped)
+    @Test
+    mutating func playStopTapped_whenPlaying_stopsEngine() {
+        createSut()
 
-        #expect(await mockMetronome.calls == [.play])
+        sut.playStopTapped()
+        sut.playStopTapped()
+
+        #expect(sut.playButtonState == .play)
+        #expect(engineMock.calls == [.play(bpm: 120, clickSample: .classic), .stop])
     }
 
-    @Test func playStopTapped_whenPlaying_callsStop() async {
-        await sendState(
-            MetronomeState(tempo: 120, isPlaying: true, progressWithinBar: 0)
-        )
+    @Test
+    mutating func playStopTapped_whenPlaying_clearsHighlight() {
+        engineMock.playResult = 100
+        engineMock.sampleTime = 50
+        createSut()
+        sut.playStopTapped()
+        sut.tick()
 
-        await sut.accept(action: .playStopTapped)
+        sut.playStopTapped()
 
-        #expect(await mockMetronome.calls == [.stop])
+        #expect(sut.beats == [
+            Beat(id: 0, highlighted: false),
+            Beat(id: 1, highlighted: false),
+            Beat(id: 2, highlighted: false),
+            Beat(id: 3, highlighted: false),
+        ])
     }
 
-    @Test func tempoChanged_callsChangeTempo() async {
-        await sut.accept(action: .tempoChanged(tempo: 180))
+    // MARK: - Tempo
 
-        #expect(await mockMetronome.calls == [.changeTempo(bpm: 180)])
-    }
-    
-    @Test func clickSampleChanged_callsChangeClickSample() async {
-        await sut.accept(action: .clickSampleChanged(clickSample: .digital))
+    @Test
+    mutating func tempoChanged_updatesTempo() {
+        createSut()
 
-        #expect(await mockMetronome.calls == [.changeClickSample(clickSample: .digital)])
-    }
+        sut.tempoChanged(tempo: 180)
 
-    @Test func settingsTapped_setsDestination() async {
-        await sut.accept(action: .settingsTapped)
-
-        #expect(sut.destination == .settings)
+        #expect(sut.tempo == 180)
     }
 
-    @Test func beatHighlighting_firstQuarter() async {
-        await sendState(
-            MetronomeState(tempo: 120, isPlaying: true, progressWithinBar: 0.1)
-        )
+    @Test
+    mutating func tempoChanged_whilePlaying_restartsPlayback() {
+        createSut()
+        sut.playStopTapped()
 
-        #expect(sut.state.beats[0].highlighted == true)
-        #expect(sut.state.beats[1].highlighted == false)
+        sut.tempoChanged(tempo: 180)
+
+        #expect(engineMock.calls == [
+            .play(bpm: 120, clickSample: .classic),
+            .play(bpm: 180, clickSample: .classic),
+        ])
     }
 
-    @Test func beatHighlighting_thirdQuarter() async {
-        await sendState(
-            MetronomeState(tempo: 120, isPlaying: true, progressWithinBar: 0.6)
-        )
+    @Test
+    mutating func tempoChanged_whileStopped_doesNotTouchEngine() {
+        createSut()
 
-        #expect(sut.state.beats[2].highlighted == true)
+        sut.tempoChanged(tempo: 180)
+
+        #expect(engineMock.calls.isEmpty)
     }
 
-    @Test func beats_whenNotPlaying_allUnhighlighted() async {
-        await sendState(
-            MetronomeState(tempo: 120, isPlaying: true, progressWithinBar: 0)
-        )
-        await sendState(
-            MetronomeState(tempo: 120, isPlaying: false, progressWithinBar: 0.5)
-        )
+    // MARK: - Click sample
 
-        #expect(sut.state.beats == MetronomeViewState.initial.beats)
+    @Test
+    mutating func clickSampleChanged_updatesClickSample() {
+        createSut()
+
+        sut.clickSampleChanged(clickSample: .digital)
+
+        #expect(sut.clickSample == .digital)
     }
+
+    @Test
+    mutating func clickSampleChanged_whilePlaying_restartsPlayback() {
+        createSut()
+        sut.playStopTapped()
+
+        sut.clickSampleChanged(clickSample: .digital)
+
+        #expect(engineMock.calls == [
+            .play(bpm: 120, clickSample: .classic),
+            .play(bpm: 120, clickSample: .digital),
+        ])
+    }
+
+    @Test
+    mutating func clickSampleChanged_whileStopped_doesNotTouchEngine() {
+        createSut()
+
+        sut.clickSampleChanged(clickSample: .digital)
+
+        #expect(engineMock.calls.isEmpty)
+    }
+
+    // MARK: - Tick
+
+    @Test(arguments: [
+        (0.0, 0),
+        (24.0, 0),
+        (25.0, 1),
+        (50.0, 2),
+        (75.0, 3),
+        (99.0, 3),
+        (150.0, 2),
+        (200.0, 0),
+    ])
+    mutating func tick_highlightsBeatUnderPlayhead(sampleTime: Double, expectedBeat: Int) {
+        engineMock.playResult = 100
+        engineMock.sampleTime = sampleTime
+        createSut()
+        sut.playStopTapped()
+
+        sut.tick()
+
+        #expect(sut.beats == [
+            Beat(id: 0, highlighted: expectedBeat == 0),
+            Beat(id: 1, highlighted: expectedBeat == 1),
+            Beat(id: 2, highlighted: expectedBeat == 2),
+            Beat(id: 3, highlighted: expectedBeat == 3),
+        ])
+    }
+
+    @Test
+    mutating func tick_whileStopped_highlightsNothing() {
+        engineMock.sampleTime = 50
+        createSut()
+
+        sut.tick()
+
+        #expect(sut.beats == [
+            Beat(id: 0, highlighted: false),
+            Beat(id: 1, highlighted: false),
+            Beat(id: 2, highlighted: false),
+            Beat(id: 3, highlighted: false),
+        ])
+    }
+
+    @Test
+    mutating func tick_withoutBarLength_highlightsNothing() {
+        engineMock.playResult = 0
+        engineMock.sampleTime = 50
+        createSut()
+        sut.playStopTapped()
+
+        sut.tick()
+
+        #expect(sut.beats == [
+            Beat(id: 0, highlighted: false),
+            Beat(id: 1, highlighted: false),
+            Beat(id: 2, highlighted: false),
+            Beat(id: 3, highlighted: false),
+        ])
+    }
+
 }

@@ -65,14 +65,3 @@ struct MetronomeView: View {
         }
     }
 }
-
-struct Beat: Identifiable, Equatable {
-    let id: Int
-    let highlighted: Bool
-}
-
-extension [Beat] {
-    static func bar(highlighting beat: Int?) -> [Beat] {
-        (0..<BeatsPerBar.value).map { Beat(id: $0, highlighted: $0 == beat) }
-    }
-}

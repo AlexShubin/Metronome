@@ -84,3 +84,14 @@ class MetronomeViewModel: MetronomeViewModelType {
 enum PlayButtonState: Equatable {
     case play, stop
 }
+
+struct Beat: Identifiable, Equatable {
+    let id: Int
+    let highlighted: Bool
+}
+
+private extension [Beat] {
+    static func bar(highlighting beat: Int?) -> [Beat] {
+        (0..<BeatsPerBar.value).map { Beat(id: $0, highlighted: $0 == beat) }
+    }
+}
