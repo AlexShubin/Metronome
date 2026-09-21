@@ -55,8 +55,3 @@ struct DraggableTempoControl: View {
         )
     }
 }
-
-#Preview {
-    @Previewable @State var tempo = 120
-    DraggableTempoControl(tempo: $tempo, range: 40...240)
-}

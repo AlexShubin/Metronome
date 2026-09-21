@@ -1,6 +1,6 @@
 //
 //  AsyncSequence+Testing.swift
-//  MetronomeEngineTests
+//  MetronomeAppTests
 //
 //  Created by Alex Shubin on 24.03.26.
 //  Copyright © 2026 Alex Shubin. All rights reserved.

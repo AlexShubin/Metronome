@@ -1,0 +1,64 @@
+{
+  "fill" : {
+    "automatic-gradient" : "extended-srgb:0.00000,0.53333,1.00000,1.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "fill" : {
+            "automatic-gradient" : "extended-gray:1.00000,1.00000"
+          },
+          "glass" : true,
+          "hidden" : false,
+          "image-name" : "Image.svg",
+          "name" : "Image",
+          "position" : {
+            "scale" : 3.5,
+            "translation-in-points" : [
+              222.82207454629963,
+              -253.75068558822255
+            ]
+          }
+        },
+        {
+          "blend-mode" : "normal",
+          "fill" : {
+            "automatic-gradient" : "extended-gray:1.00000,1.00000"
+          },
+          "glass-specializations" : [
+            {
+              "value" : true
+            },
+            {
+              "appearance" : "light",
+              "value" : true
+            }
+          ],
+          "image-name" : "simple-cute-bison-outline-cartoon-style-clear-background-generative-ai_804788-10435.jpg copy.png",
+          "name" : "simple-cute-bison-outline-cartoon-style-clear-background-generative-ai_804788-10435.jpg copy",
+          "position" : {
+            "scale" : 1.2,
+            "translation-in-points" : [
+              -190.77729539931693,
+              160.79008941177744
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "squares" : [
+      "macOS"
+    ]
+  }
+}

@@ -8,11 +8,10 @@
 
 import Foundation
 import Observation
-import MetronomeEngine
 
 enum MetronomeViewModelAction {
     case tempoChanged(tempo: Int)
-    case clickSampleChanged(clickSample: ClickSampleViewState)
+    case clickSampleChanged(clickSample: ClickSample)
     case playStopTapped
     case tick
 }
@@ -20,8 +19,8 @@ enum MetronomeViewModelAction {
 @MainActor
 protocol MetronomeViewModelType: Observable {
     var tempo: Int { get }
-    var clickSample: ClickSampleViewState { get }
-    var playButtonState: PlayButtonViewState { get }
+    var clickSample: ClickSample { get }
+    var playButtonState: PlayButtonState { get }
     var beats: [Beat] { get }
     func accept(action: MetronomeViewModelAction) async
 }
@@ -29,67 +28,75 @@ protocol MetronomeViewModelType: Observable {
 @MainActor @Observable
 class MetronomeViewModel: MetronomeViewModelType {
     private(set) var tempo = 120
-    private(set) var clickSample: ClickSampleViewState = .classic
-    private(set) var playButtonState: PlayButtonViewState = .play
-    private(set) var beats: [Beat] = .idle
+    private(set) var clickSample: ClickSample = .classic
 
-    @ObservationIgnored private let metronome: MetronomeType
-    @ObservationIgnored private var observationTask: Task<Void, Never>?
-
-    init(metronome: MetronomeType) {
-        self.metronome = metronome
-        observationTask = Task { [weak self, metronome] in
-            for await metronomeState in await metronome.metronomeStateStream {
-                guard !Task.isCancelled else { break }
-                self?.applyState(metronomeState)
-            }
-        }
+    var playButtonState: PlayButtonState {
+        isPlaying ? .stop : .play
     }
 
-    deinit {
-        observationTask?.cancel()
+    var beats: [Beat] {
+        .bar(highlighting: currentBeat)
+    }
+
+    private var isPlaying = false
+    private var currentBeat: Int?
+
+    @ObservationIgnored private let engine: MetronomeEngineType
+    @ObservationIgnored private var barLength: BarLength = 0
+
+    init(engine: MetronomeEngineType) {
+        self.engine = engine
     }
 
     func accept(action: MetronomeViewModelAction) async {
         switch action {
         case .tempoChanged(let tempo):
-            await metronome.changeTempo(to: Double(tempo))
+            self.tempo = tempo
+            restartPlaybackIfNeeded()
         case .clickSampleChanged(let clickSample):
-            await metronome.changeClickSample(to: ClickSample(clickSample))
+            self.clickSample = clickSample
+            restartPlaybackIfNeeded()
         case .playStopTapped:
-            switch playButtonState {
-            case .stop: await metronome.stop()
-            case .play: await metronome.play()
+            if isPlaying {
+                stopPlayback()
+            } else {
+                startPlayback()
             }
         case .tick:
-            await metronome.tick()
+            updateCurrentBeat()
         }
     }
 
-    private func applyState(_ metronomeState: MetronomeState) {
-        tempo = Int(metronomeState.tempo)
-        clickSample = ClickSampleViewState(metronomeState.clickSample)
-        playButtonState = metronomeState.isPlaying ? .stop : .play
-        beats = .bar(highlighting: metronomeState.currentBeat)
+    private func startPlayback() {
+        isPlaying = true
+        schedulePlayback()
+    }
+
+    private func stopPlayback() {
+        isPlaying = false
+        currentBeat = nil
+        engine.stop()
+    }
+
+    private func restartPlaybackIfNeeded() {
+        guard isPlaying else { return }
+        schedulePlayback()
+    }
+
+    private func schedulePlayback() {
+        barLength = engine.play(bpm: Double(tempo), clickSample: clickSample)
+    }
+
+    private func updateCurrentBeat() {
+        guard isPlaying, barLength > 0 else { return }
+        let progress = engine.sampleTime.truncatingRemainder(dividingBy: barLength) / barLength
+        let beat = min(max(Int(progress * Double(BeatsPerBar.value)), 0), BeatsPerBar.value - 1)
+        guard beat != currentBeat else { return }
+        currentBeat = beat
     }
 }
 
-private extension ClickSampleViewState {
-    init(_ clickSample: ClickSample) {
-        switch clickSample {
-        case .classic: self = .classic
-        case .digital: self = .digital
-        case .logicStyle: self = .logicStyle
-        }
-    }
-}
-
-private extension ClickSample {
-    init(_ viewState: ClickSampleViewState) {
-        switch viewState {
-        case .classic: self = .classic
-        case .digital: self = .digital
-        case .logicStyle: self = .logicStyle
-        }
-    }
+enum PlayButtonState: Equatable {
+    case play
+    case stop
 }

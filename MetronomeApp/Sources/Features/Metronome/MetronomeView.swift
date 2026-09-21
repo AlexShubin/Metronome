@@ -6,7 +6,6 @@
 //  Copyright © 2023 Alex Shubin. All rights reserved.
 //
 
-import MetronomeEngine
 import SwiftUI
 
 struct MetronomeView: View {
@@ -80,22 +79,6 @@ extension [Beat] {
     }
 
     static func bar(highlighting beat: Int?) -> [Beat] {
-        (0..<MetronomeState.beatsPerBar).map { Beat(id: $0, highlighted: $0 == beat) }
+        (0..<BeatsPerBar.value).map { Beat(id: $0, highlighted: $0 == beat) }
     }
-}
-
-// MARK: - Preview
-
-@MainActor @Observable
-private class PreviewMetronomeViewModel: MetronomeViewModelType {
-    var tempo = 120
-    var clickSample: ClickSampleViewState = .classic
-    var playButtonState: PlayButtonViewState = .play
-    var beats: [Beat] = .bar(highlighting: 0)
-
-    func accept(action: MetronomeViewModelAction) async {}
-}
-
-#Preview {
-    MetronomeView(viewModel: PreviewMetronomeViewModel())
 }

@@ -1,6 +1,6 @@
 //
 //  MetronomeEngine.swift
-//  MetronomeEngine
+//  MetronomeApp
 //
 //  Created by Alex Shubin on 26.03.17.
 //  Copyright © 2017 Alex Shubin. All rights reserved.
@@ -74,13 +74,13 @@ class MetronomeEngine: MetronomeEngineType {
 
     private func generateBuffer(bpm: Double, clickSample: ClickSample) -> AVAudioPCMBuffer {
         let beatLength = AVAudioFrameCount(AVAudioFormat.standard.sampleRate * 60 / bpm)
-        let barLength = AVAudioFrameCount(MetronomeState.beatsPerBar) * beatLength
+        let barLength = AVAudioFrameCount(BeatsPerBar.value) * beatLength
 
         let accentedClickSamples = readSamples(from: clickSample.accentedFile, beatLength: beatLength)
         let mainClickSamples = readSamples(from: clickSample.regularFile, beatLength: beatLength)
 
         var barSamples = accentedClickSamples
-        for _ in 1..<MetronomeState.beatsPerBar {
+        for _ in 1..<BeatsPerBar.value {
             barSamples.append(contentsOf: mainClickSamples)
         }
 

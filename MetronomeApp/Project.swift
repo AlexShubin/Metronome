@@ -27,6 +27,7 @@ let project = Project(
             bundleId: "com.alexshubin.Metronome",
             deploymentTargets: .macOS("26.0"),
             infoPlist: .extendingDefault(with: [
+                "CFBundleIconName": "AppIcon",
                 "CFBundleDisplayName": "Metronome",
                 "CFBundleName": "Metronome",
                 "CFBundleShortVersionString": .string(appVersion),
@@ -39,11 +40,9 @@ let project = Project(
                 "Resources",
             ],
             entitlements: .file(path: "Resources/MetronomeApp.entitlements"),
-            dependencies: [
-                .project(target: "MetronomeEngine", path: .relativeToManifest("../MetronomeEngine")),
-            ],
             settings: .settings(
                 base: [
+                    "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
                     "ENABLE_APP_SANDBOX": "YES",
                     "ENABLE_HARDENED_RUNTIME": "YES",
                     "CODE_SIGN_IDENTITY": "Apple Development",
@@ -65,8 +64,6 @@ let project = Project(
             ],
             dependencies: [
                 .target(name: "MetronomeApp"),
-                .project(target: "MetronomeEngine", path: .relativeToManifest("../MetronomeEngine")),
-                .project(target: "MetronomeEngineTestSupport", path: .relativeToManifest("../MetronomeEngine")),
             ],
             settings: .settings(
                 base: [

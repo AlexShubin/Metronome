@@ -9,35 +9,14 @@
 import SwiftUI
 
 struct ClickSamplePicker: View {
-    @Binding var selection: ClickSampleViewState
+    @Binding var selection: ClickSample
 
     var body: some View {
         Picker("Click Sample", selection: $selection) {
-            ForEach(ClickSampleViewState.allCases) { option in
+            ForEach(ClickSample.allCases) { option in
                 Text(option.description).tag(option)
             }
         }
         .pickerStyle(.automatic)
     }
-}
-
-enum ClickSampleViewState: String, CaseIterable, Identifiable, Equatable, CustomStringConvertible {
-    case classic
-    case digital
-    case logicStyle
-
-    var id: String { rawValue }
-
-    var description: String {
-        switch self {
-        case .classic: "Classic"
-        case .digital: "Digital"
-        case .logicStyle: "Logic Style"
-        }
-    }
-}
-
-#Preview {
-    @Previewable @State var selection: ClickSampleViewState = .classic
-    ClickSamplePicker(selection: $selection)
 }
