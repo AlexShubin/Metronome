@@ -9,7 +9,7 @@
 import SwiftUI
 
 struct PlayButton: View {
-    let state: PlayButtonViewState
+    let state: PlayButtonState
     let action: () -> Void
 
     var body: some View {
@@ -18,17 +18,4 @@ struct PlayButton: View {
                 .font(.largeTitle)
         }
     }
-}
-
-enum PlayButtonViewState: Equatable {
-    case play
-    case stop
-}
-
-#Preview("Play") {
-    PlayButton(state: .play, action: {})
-}
-
-#Preview("Stop") {
-    PlayButton(state: .stop, action: {})
 }

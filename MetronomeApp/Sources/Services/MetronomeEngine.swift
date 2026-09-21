@@ -1,6 +1,6 @@
 //
 //  MetronomeEngine.swift
-//  MetronomeEngine
+//  MetronomeApp
 //
 //  Created by Alex Shubin on 26.03.17.
 //  Copyright © 2017 Alex Shubin. All rights reserved.
@@ -33,7 +33,7 @@ class MetronomeEngine: MetronomeEngineType {
         audioPlayerNode = AVAudioPlayerNode()
 
         audioEngine = AVAudioEngine()
-        audioEngine.attach(self.audioPlayerNode)
+        audioEngine.attach(audioPlayerNode)
 
         audioEngine.connect(audioPlayerNode,
                             to: audioEngine.mainMixerNode,
@@ -74,17 +74,18 @@ class MetronomeEngine: MetronomeEngineType {
 
     private func generateBuffer(bpm: Double, clickSample: ClickSample) -> AVAudioPCMBuffer {
         let beatLength = AVAudioFrameCount(AVAudioFormat.standard.sampleRate * 60 / bpm)
+        let barLength = AVAudioFrameCount(BeatsPerBar.value) * beatLength
 
         let accentedClickSamples = readSamples(from: clickSample.accentedFile, beatLength: beatLength)
         let mainClickSamples = readSamples(from: clickSample.regularFile, beatLength: beatLength)
 
         var barSamples = accentedClickSamples
-        for _ in 1...3 {
+        for _ in 1..<BeatsPerBar.value {
             barSamples.append(contentsOf: mainClickSamples)
         }
 
-        let bufferBar = AVAudioPCMBuffer(pcmFormat: .standard, frameCapacity: 4 * beatLength)!
-        bufferBar.frameLength = 4 * beatLength
+        let bufferBar = AVAudioPCMBuffer(pcmFormat: .standard, frameCapacity: barLength)!
+        bufferBar.frameLength = barLength
         bufferBar.floatChannelData!.pointee.update(from: barSamples,
                                                    count: Int(bufferBar.frameLength))
         return bufferBar

@@ -1,15 +1,19 @@
 import ProjectDescription
 
+let appVersion = "1.0.0"
+let buildNumber = "1"
+
 let project = Project(
     name: "MetronomeApp",
+    options: .options(automaticSchemesOptions: .enabled(codeCoverageEnabled: true)),
     settings: .settings(
         base: [
             "SWIFT_VERSION": "6.0",
+            "SWIFT_APPROACHABLE_CONCURRENCY": "YES",
             "ENABLE_USER_SCRIPT_SANDBOXING": "YES",
-            "SWIFT_EMIT_LOC_STRINGS": "YES",
-            "CODE_SIGN_STYLE": "Manual",
+            "CODE_SIGN_STYLE": "Automatic",
             "CODE_SIGN_IDENTITY": "Apple Development",
-            "DEVELOPMENT_TEAM": "",
+            "DEVELOPMENT_TEAM": "RBNKHS73S3",
         ],
         configurations: [
             .debug(name: "Debug"),
@@ -19,31 +23,54 @@ let project = Project(
     targets: [
         .target(
             name: "MetronomeApp",
-            destinations: .iOS,
+            destinations: .macOS,
             product: .app,
-            bundleId: "com.alexshubin.MetronomeApp",
-            deploymentTargets: .iOS("26.0"),
+            bundleId: "com.alexshubin.Metronome",
+            deploymentTargets: .macOS("26.0"),
             infoPlist: .extendingDefault(with: [
-                "UILaunchScreen": ["UIColorName": "", "UIImageName": ""],
+                "CFBundleIconName": "AppIcon",
+                "CFBundleDisplayName": "Metronome",
+                "CFBundleName": "Metronome",
+                "CFBundleShortVersionString": .string(appVersion),
+                "CFBundleVersion": .string(buildNumber),
+                "LSApplicationCategoryType": "public.app-category.music",
+                "ITSAppUsesNonExemptEncryption": false,
             ]),
-            sources: ["Sources/**"],
-            resources: ["Resources/**"],
-            dependencies: [
-                .project(target: "MetronomeEngine", path: "../MetronomeEngine"),
-            ]
+            buildableFolders: [
+                "Sources",
+                "Resources",
+            ],
+            entitlements: .file(path: "Resources/MetronomeApp.entitlements"),
+            settings: .settings(
+                base: [
+                    "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
+                    "ENABLE_APP_SANDBOX": "YES",
+                    "ENABLE_HARDENED_RUNTIME": "YES",
+                    "PRODUCT_NAME": "Metronome",
+                    "PRODUCT_MODULE_NAME": "MetronomeApp",
+                    "MARKETING_VERSION": .string(appVersion),
+                    "CURRENT_PROJECT_VERSION": .string(buildNumber),
+                ]
+            )
         ),
         .target(
             name: "MetronomeAppTests",
-            destinations: .iOS,
+            destinations: .macOS,
             product: .unitTests,
-            bundleId: "com.alexshubin.MetronomeAppTests",
-            deploymentTargets: .iOS("26.0"),
-            sources: ["Tests/**"],
+            bundleId: "com.alexshubin.Metronome.MetronomeAppTests",
+            deploymentTargets: .macOS("26.0"),
+            buildableFolders: [
+                "Tests",
+            ],
             dependencies: [
                 .target(name: "MetronomeApp"),
-                .project(target: "MetronomeEngine", path: "../MetronomeEngine"),
-                .project(target: "MetronomeEngineTestSupport", path: "../MetronomeEngine"),
-            ]
+            ],
+            settings: .settings(
+                base: [
+                    "TEST_HOST": "$(BUILT_PRODUCTS_DIR)/Metronome.app/Contents/MacOS/Metronome",
+                    "BUNDLE_LOADER": "$(TEST_HOST)",
+                ]
+            )
         ),
     ]
 )

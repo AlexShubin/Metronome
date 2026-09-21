@@ -10,120 +10,58 @@ import SwiftUI
 
 struct MetronomeView: View {
     @State var viewModel: MetronomeViewModelType
-    @Environment(\.dependencies) private var dependencies
 
     var body: some View {
-        NavigationStack {
-            VStack(alignment: .center, spacing: 12) {
+        VStack(alignment: .center, spacing: 12) {
+            TimelineView(.animation(paused: viewModel.playButtonState == .play)) { context in
                 HStack(spacing: 40) {
-                    ForEach(viewModel.state.beats) {
-                        circle(highlighted: $0.highlighted)
+                    ForEach(viewModel.beats) { beat in
+                        circle(beat)
                     }
                 }
                 .frame(height: 80)
-
-                HStack(spacing: 24) {
-                    DraggableTempoControl(
-                        tempo: .init(
-                            get: { viewModel.state.tempo },
-                            set: { newTempo in Task { await viewModel.accept(action: .tempoChanged(tempo: newTempo)) } }
-                        ),
-                        range: 40...240
-                    )
-                    PlayButton(state: viewModel.state.playButtonState) {
-                        Task { await viewModel.accept(action: .playStopTapped) }
-                    }
+                .task(id: context.date) {
+                    viewModel.tick()
                 }
+            }
 
-                ClickSamplePicker(
-                    selection: Binding(
-                        get: { viewModel.state.clickSample },
-                        set: { newSample in
-                            Task { await viewModel.accept(action: .clickSampleChanged(clickSample: newSample)) }
-                        }
-                    )
+            HStack(spacing: 24) {
+                DraggableTempoControl(
+                    tempo: .init(
+                        get: { viewModel.tempo },
+                        set: { newTempo in viewModel.tempoChanged(tempo: newTempo) }
+                    ),
+                    range: 40...240
                 )
+                PlayButton(state: viewModel.playButtonState) {
+                    viewModel.playStopTapped()
+                }
             }
-            .padding()
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        Task { await viewModel.accept(action: .settingsTapped) }
-                    } label: {
-                        Image(systemName: "gear")
+
+            ClickSamplePicker(
+                selection: Binding(
+                    get: { viewModel.clickSample },
+                    set: { newSample in
+                        viewModel.clickSampleChanged(clickSample: newSample)
                     }
-                }
-            }
-            .sheet(item: $viewModel.destination) { destination in
-                switch destination {
-                case .settings:
-                    SettingsView(viewModel: dependencies.makeSettingsViewModel())
-                }
-            }
+                )
+            )
         }
+        .padding()
+        .frame(minWidth: 360)
     }
 
     @ViewBuilder
-    private func circle(highlighted: Bool) -> some View {
-        let size: CGFloat = highlighted ? 35 : 25
+    private func circle(_ beat: Beat) -> some View {
+        let size: CGFloat = beat.highlighted ? 35 : 25
 
         ZStack {
             Color.clear
                 .frame(width: 40, height: 40)
             Circle()
-                .fill(highlighted ? .red : .blue)
+                .fill(beat.highlighted ? .red : .blue)
                 .frame(width: size, height: size)
-                .animation(.linear(duration: 0.1), value: viewModel.state.beats)
+                .animation(.linear(duration: 0.1), value: beat.highlighted)
         }
     }
-}
-
-// MARK: - View State
-
-struct MetronomeViewState: Equatable {
-    struct Beat: Identifiable, Equatable {
-        let id: Int
-        let highlighted: Bool
-    }
-
-    var tempo: Int
-    var clickSample: ClickSampleViewState
-    var beats: [Beat]
-    var playButtonState: PlayButtonViewState
-
-    static let initial = MetronomeViewState(
-        tempo: 120,
-        clickSample: .classic,
-        beats: [
-            .init(id: 0, highlighted: false),
-            .init(id: 1, highlighted: false),
-            .init(id: 2, highlighted: false),
-            .init(id: 3, highlighted: false),
-        ],
-        playButtonState: .play
-    )
-}
-
-// MARK: - Preview
-
-@MainActor @Observable
-private class PreviewMetronomeViewModel: MetronomeViewModelType {
-    var state = MetronomeViewState(
-        tempo: 120,
-        clickSample: .classic,
-        beats: [
-            .init(id: 0, highlighted: true),
-            .init(id: 1, highlighted: false),
-            .init(id: 2, highlighted: false),
-            .init(id: 3, highlighted: false),
-        ],
-        playButtonState: .play
-    )
-    var destination: MetronomeDestination?
-
-    func accept(action: MetronomeViewModelAction) async {}
-}
-
-#Preview {
-    MetronomeView(viewModel: PreviewMetronomeViewModel())
 }
