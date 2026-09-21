@@ -1,12 +1,10 @@
-# Metronome App
+# Metronome
 
-💡 An app demonstrating how an accurate metronome can be built using Swift and `AVAudioEngine`.
+💡 A tiny macOS metronome, kept honest by the sample clock instead of a timer.
 
-📝 This one is based on the sample rate — not on some sort of a timer.
+🧪 Built directly on Apple's audio stack — `AVAudioEngine` and `AVAudioPlayerNode` for scheduling. SwiftUI front-end. Swift 6 strict concurrency. Zero external dependencies. Tuist for project generation.
 
-ℹ️ A small idea that is growing into a more serious app, that I might even use in my own guitar practice. Let's see if I will have time and persistence to finish it. 🎸
-
-🚀 Feel free to use any code here to build more complex apps. If you're only interested in the metronome engine. Check out this file: [MetronomeEngine.swift](MetronomeEngine/Sources/MetronomeEngine.swift)
+🎸 A small idea that I'll be growing over time. Let's see where it goes.
 
 ## Getting Started
 
@@ -17,5 +15,5 @@ Install [mise](https://mise.jdx.dev/getting-started.html) if you don't have it y
 ### Setup
 
 ```bash
-mise run generate     # resolves dependencies and generates the Xcode project
+mise run generate     # generates the Xcode project
 ```
