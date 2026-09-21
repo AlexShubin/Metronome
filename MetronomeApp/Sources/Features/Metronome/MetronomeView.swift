@@ -13,7 +13,7 @@ struct MetronomeView: View {
 
     var body: some View {
         VStack(alignment: .center, spacing: 12) {
-            TimelineView(.animation(paused: viewModel.state.playButtonState == .play)) { _ in
+            TimelineView(.animation(paused: viewModel.playButtonState == .play)) { _ in
                 HStack(spacing: 40) {
                     ForEach(viewModel.beats) { beat in
                         circle(beat)
@@ -25,19 +25,19 @@ struct MetronomeView: View {
             HStack(spacing: 24) {
                 DraggableTempoControl(
                     tempo: .init(
-                        get: { viewModel.state.tempo },
+                        get: { viewModel.tempo },
                         set: { newTempo in Task { await viewModel.accept(action: .tempoChanged(tempo: newTempo)) } }
                     ),
                     range: 40...240
                 )
-                PlayButton(state: viewModel.state.playButtonState) {
+                PlayButton(state: viewModel.playButtonState) {
                     Task { await viewModel.accept(action: .playStopTapped) }
                 }
             }
 
             ClickSamplePicker(
                 selection: Binding(
-                    get: { viewModel.state.clickSample },
+                    get: { viewModel.clickSample },
                     set: { newSample in
                         Task { await viewModel.accept(action: .clickSampleChanged(clickSample: newSample)) }
                     }
@@ -61,26 +61,4 @@ struct MetronomeView: View {
                 .animation(.linear(duration: 0.1), value: beat.highlighted)
         }
     }
-}
-
-// MARK: - View State
-
-struct MetronomeViewState: Equatable {
-    var tempo: Int
-    var clickSample: ClickSampleViewState
-    var playButtonState: PlayButtonViewState
-
-    static let initial = MetronomeViewState(
-        tempo: 120,
-        clickSample: .classic,
-        playButtonState: .play
-    )
-}
-
-struct Beat: Identifiable, Equatable {
-    static let countPerBar = 4
-    static let idle = (0..<Self.countPerBar).map { Beat(id: $0, highlighted: false) }
-
-    let id: Int
-    let highlighted: Bool
 }

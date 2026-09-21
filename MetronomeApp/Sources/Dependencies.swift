@@ -10,12 +10,12 @@ import MetronomeEngine
 import SwiftUI
 
 struct Dependencies {
-    private let metronome: MetronomeType
+    private let engine: MetronomeEngineType
 
-    static let live = Dependencies(metronome: MetronomeEngine.Dependencies.live.makeMetronome())
+    static let live = Dependencies(engine: MetronomeEngine.Dependencies.live.engine)
 
     @MainActor func makeMetronomeViewModel() -> MetronomeViewModelType {
-        MetronomeViewModel(metronome: metronome)
+        MetronomeViewModel(engine: engine)
     }
 }
 
