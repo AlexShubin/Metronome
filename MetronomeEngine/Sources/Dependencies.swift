@@ -7,7 +7,9 @@
 //
 
 public struct Dependencies: Sendable {
-    public let engine: MetronomeEngineType
+    public static let live = Dependencies()
 
-    public static let live = Dependencies(engine: MetronomeEngine())
+    public func makeMetronome() -> MetronomeType {
+        Metronome(metronomeEngine: MetronomeEngine())
+    }
 }

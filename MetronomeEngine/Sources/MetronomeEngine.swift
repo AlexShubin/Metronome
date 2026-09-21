@@ -7,26 +7,27 @@
 //
 
 import AVFoundation
-import Synchronization
 
-public protocol MetronomeEngineType: Sendable {
-    /// Starts the metronome, replacing whatever is currently looping.
+protocol MetronomeEngineType {
+    /// Starts the metronome.
     /// - Parameters:
     ///   - bpm: Tempo. Beats per minute.
     ///   - clickSample: The click sample to use.
-    func play(bpm: Double, clickSample: ClickSample) async
+    /// - Returns: Returns the bar length in frames, so later on we can understand the position of the player within the bar.
+    func play(bpm: Double, clickSample: ClickSample) -> BarLength
 
-    func stop() async
+    func stop()
 
-    /// Position of the playhead within the current bar, from 0 to 1.
-    /// Safe to read from any isolation, so the UI can sample it every frame.
-    nonisolated var progressWithinBar: Double { get }
+    /// Accumulative time of the playhead.
+    /// Note that if it played two bars in total, it will return the accumulative time of two bars.
+    var sampleTime: Double { get }
 }
 
-actor MetronomeEngine: MetronomeEngineType {
-    private let audioEngine: AVAudioEngine
+typealias BarLength = Double
+
+class MetronomeEngine: MetronomeEngineType {
     private let audioPlayerNode: AVAudioPlayerNode
-    private let barLength = Mutex<Double>(0)
+    private let audioEngine: AVAudioEngine
 
     init() {
         audioPlayerNode = AVAudioPlayerNode()
@@ -40,17 +41,11 @@ actor MetronomeEngine: MetronomeEngineType {
         try! audioEngine.start()
     }
 
-    nonisolated var progressWithinBar: Double {
-        let length = barLength.withLock { $0 }
-        guard length > 0 else { return 0 }
-        return sampleTime.truncatingRemainder(dividingBy: length) / length
-    }
-
     func stop() {
         audioPlayerNode.stop()
     }
 
-    func play(bpm: Double, clickSample: ClickSample) {
+    func play(bpm: Double, clickSample: ClickSample) -> BarLength {
         let buffer = generateBuffer(bpm: bpm, clickSample: clickSample)
 
         if audioPlayerNode.isPlaying {
@@ -65,12 +60,10 @@ actor MetronomeEngine: MetronomeEngineType {
             options: [.interruptsAtLoop, .loops]
         )
 
-        barLength.withLock { $0 = Double(buffer.frameLength) }
+        return Double(buffer.frameLength)
     }
 
-    /// Accumulative time of the playhead.
-    /// Note that if it played two bars in total, it will return the accumulative time of two bars.
-    private nonisolated var sampleTime: Double {
+    var sampleTime: Double {
         guard let nodeTime = audioPlayerNode.lastRenderTime,
               let playerTime = audioPlayerNode.playerTime(forNodeTime: nodeTime) else {
             return 0
@@ -81,17 +74,18 @@ actor MetronomeEngine: MetronomeEngineType {
 
     private func generateBuffer(bpm: Double, clickSample: ClickSample) -> AVAudioPCMBuffer {
         let beatLength = AVAudioFrameCount(AVAudioFormat.standard.sampleRate * 60 / bpm)
+        let barLength = AVAudioFrameCount(MetronomeState.beatsPerBar) * beatLength
 
         let accentedClickSamples = readSamples(from: clickSample.accentedFile, beatLength: beatLength)
         let mainClickSamples = readSamples(from: clickSample.regularFile, beatLength: beatLength)
 
         var barSamples = accentedClickSamples
-        for _ in 1...3 {
+        for _ in 1..<MetronomeState.beatsPerBar {
             barSamples.append(contentsOf: mainClickSamples)
         }
 
-        let bufferBar = AVAudioPCMBuffer(pcmFormat: .standard, frameCapacity: 4 * beatLength)!
-        bufferBar.frameLength = 4 * beatLength
+        let bufferBar = AVAudioPCMBuffer(pcmFormat: .standard, frameCapacity: barLength)!
+        bufferBar.frameLength = barLength
         bufferBar.floatChannelData!.pointee.update(from: barSamples,
                                                    count: Int(bufferBar.frameLength))
         return bufferBar

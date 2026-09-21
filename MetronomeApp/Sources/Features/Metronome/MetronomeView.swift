@@ -6,6 +6,7 @@
 //  Copyright © 2023 Alex Shubin. All rights reserved.
 //
 
+import MetronomeEngine
 import SwiftUI
 
 struct MetronomeView: View {
@@ -13,13 +14,16 @@ struct MetronomeView: View {
 
     var body: some View {
         VStack(alignment: .center, spacing: 12) {
-            TimelineView(.animation(paused: viewModel.playButtonState == .play)) { _ in
+            TimelineView(.animation(paused: viewModel.playButtonState == .play)) { context in
                 HStack(spacing: 40) {
                     ForEach(viewModel.beats) { beat in
                         circle(beat)
                     }
                 }
                 .frame(height: 80)
+                .task(id: context.date) {
+                    await viewModel.accept(action: .tick)
+                }
             }
 
             HStack(spacing: 24) {
@@ -61,4 +65,37 @@ struct MetronomeView: View {
                 .animation(.linear(duration: 0.1), value: beat.highlighted)
         }
     }
+}
+
+// MARK: - View State
+
+struct Beat: Identifiable, Equatable {
+    let id: Int
+    let highlighted: Bool
+}
+
+extension [Beat] {
+    static var idle: [Beat] {
+        bar(highlighting: nil)
+    }
+
+    static func bar(highlighting beat: Int?) -> [Beat] {
+        (0..<MetronomeState.beatsPerBar).map { Beat(id: $0, highlighted: $0 == beat) }
+    }
+}
+
+// MARK: - Preview
+
+@MainActor @Observable
+private class PreviewMetronomeViewModel: MetronomeViewModelType {
+    var tempo = 120
+    var clickSample: ClickSampleViewState = .classic
+    var playButtonState: PlayButtonViewState = .play
+    var beats: [Beat] = .bar(highlighting: 0)
+
+    func accept(action: MetronomeViewModelAction) async {}
+}
+
+#Preview {
+    MetronomeView(viewModel: PreviewMetronomeViewModel())
 }
