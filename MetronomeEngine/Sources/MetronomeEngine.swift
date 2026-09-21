@@ -7,27 +7,29 @@
 //
 
 import AVFoundation
+import Synchronization
 
-protocol MetronomeEngineType {
+protocol MetronomeEngineType: Sendable {
     /// Starts the metronome.
     /// - Parameters:
     ///   - bpm: Tempo. Beats per minute.
     ///   - clickSample: The click sample to use.
-    /// - Returns: Returns the bar length in frames, so later on we can understand the position of the player within the bar.
-    func play(bpm: Double, clickSample: ClickSample) -> BarLength
+    func play(bpm: Double, clickSample: ClickSample)
 
     func stop()
 
-    /// Accumulative time of the playhead.
-    /// Note that if it played two bars in total, it will return the accumulative time of two bars.
-    var sampleTime: Double { get }
+    /// Position of the playhead within the current bar, from 0 to 1.
+    /// Safe to read from any isolation, so the UI can sample it every frame.
+    var progressWithinBar: Double { get }
 }
 
-typealias BarLength = Double
-
-class MetronomeEngine: MetronomeEngineType {
+/// `AVAudioEngine` and `AVAudioPlayerNode` tolerate use from several threads, which lets the
+/// playhead be sampled outside the actor that drives playback. The bar length is the only
+/// mutable state and is guarded by a mutex.
+final class MetronomeEngine: MetronomeEngineType, @unchecked Sendable {
     private let audioPlayerNode: AVAudioPlayerNode
     private let audioEngine: AVAudioEngine
+    private let barLength = Mutex<Double>(0)
 
     init() {
         audioPlayerNode = AVAudioPlayerNode()
@@ -45,7 +47,7 @@ class MetronomeEngine: MetronomeEngineType {
         audioPlayerNode.stop()
     }
 
-    func play(bpm: Double, clickSample: ClickSample) -> BarLength {
+    func play(bpm: Double, clickSample: ClickSample) {
         let buffer = generateBuffer(bpm: bpm, clickSample: clickSample)
 
         if audioPlayerNode.isPlaying {
@@ -60,10 +62,18 @@ class MetronomeEngine: MetronomeEngineType {
             options: [.interruptsAtLoop, .loops]
         )
 
-        return Double(buffer.frameLength)
+        barLength.withLock { $0 = Double(buffer.frameLength) }
     }
 
-    var sampleTime: Double {
+    var progressWithinBar: Double {
+        let length = barLength.withLock { $0 }
+        guard length > 0 else { return 0 }
+        return sampleTime.truncatingRemainder(dividingBy: length) / length
+    }
+
+    /// Accumulative time of the playhead.
+    /// Note that if it played two bars in total, it will return the accumulative time of two bars.
+    private var sampleTime: Double {
         guard let nodeTime = audioPlayerNode.lastRenderTime,
               let playerTime = audioPlayerNode.playerTime(forNodeTime: nodeTime) else {
             return 0

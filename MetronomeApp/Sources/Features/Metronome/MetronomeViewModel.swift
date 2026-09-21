@@ -14,31 +14,18 @@ enum MetronomeViewModelAction {
     case tempoChanged(tempo: Int)
     case clickSampleChanged(clickSample: ClickSampleViewState)
     case playStopTapped
-    case settingsTapped
-}
-
-enum MetronomeDestination: Identifiable, Equatable {
-    case settings
-
-    var id: String {
-        switch self {
-        case .settings: "settings"
-        }
-    }
 }
 
 @MainActor
 protocol MetronomeViewModelType: Observable {
     var state: MetronomeViewState { get }
-    var destination: MetronomeDestination? { get set }
+    var beats: [Beat] { get }
     func accept(action: MetronomeViewModelAction) async
 }
 
 @MainActor @Observable
 class MetronomeViewModel: MetronomeViewModelType {
     private(set) var state: MetronomeViewState = .initial
-
-    var destination: MetronomeDestination?
 
     @ObservationIgnored private let metronome: MetronomeType
     @ObservationIgnored private var observationTask: Task<Void, Never>?
@@ -53,12 +40,19 @@ class MetronomeViewModel: MetronomeViewModelType {
         }
     }
 
-    private func applyState(_ metronomeState: MetronomeState) {
-        state = MetronomeViewState(metronomeState)
-    }
-
     deinit {
         observationTask?.cancel()
+    }
+
+    var beats: [Beat] {
+        guard state.playButtonState == .stop else { return Beat.idle }
+        let position = Int(metronome.progressWithinBar * Double(Beat.countPerBar))
+        let current = min(max(position, 0), Beat.countPerBar - 1)
+        return (0..<Beat.countPerBar).map { Beat(id: $0, highlighted: $0 == current) }
+    }
+
+    private func applyState(_ metronomeState: MetronomeState) {
+        state = MetronomeViewState(metronomeState)
     }
 
     func accept(action: MetronomeViewModelAction) async {
@@ -72,8 +66,6 @@ class MetronomeViewModel: MetronomeViewModelType {
             case .stop: await metronome.stop()
             case .play: await metronome.play()
             }
-        case .settingsTapped:
-            destination = .settings
         }
     }
 }
@@ -83,16 +75,6 @@ private extension MetronomeViewState {
         tempo = Int(metronomeState.tempo)
         clickSample = ClickSampleViewState(metronomeState.clickSample)
         playButtonState = metronomeState.isPlaying ? .stop : .play
-        beats = if metronomeState.isPlaying {
-            [
-                .init(id: 0, highlighted: (0...0.25).contains(metronomeState.progressWithinBar)),
-                .init(id: 1, highlighted: (0.25...0.5).contains(metronomeState.progressWithinBar)),
-                .init(id: 2, highlighted: (0.5...0.75).contains(metronomeState.progressWithinBar)),
-                .init(id: 3, highlighted: (0.75...1).contains(metronomeState.progressWithinBar)),
-            ]
-        } else {
-            MetronomeViewState.initial.beats
-        }
     }
 }
 

@@ -2,11 +2,15 @@ import ProjectDescription
 
 let project = Project(
     name: "MetronomeEngine",
+    options: .options(automaticSchemesOptions: .enabled(codeCoverageEnabled: true)),
     settings: .settings(
         base: [
             "SWIFT_VERSION": "6.0",
+            "SWIFT_APPROACHABLE_CONCURRENCY": "YES",
             "ENABLE_USER_SCRIPT_SANDBOXING": "YES",
-            "SWIFT_EMIT_LOC_STRINGS": "YES",
+            "CODE_SIGN_STYLE": "Manual",
+            "CODE_SIGN_IDENTITY": "Apple Development",
+            "DEVELOPMENT_TEAM": "",
         ],
         configurations: [
             .debug(name: "Debug"),
@@ -16,31 +20,37 @@ let project = Project(
     targets: [
         .target(
             name: "MetronomeEngine",
-            destinations: .iOS,
-            product: .framework,
-            bundleId: "com.alexshubin.MetronomeEngine",
-            deploymentTargets: .iOS("26.0"),
-            sources: ["Sources/**"],
-            resources: ["Resources/**"]
+            destinations: .macOS,
+            product: .staticFramework,
+            bundleId: "com.alexshubin.Metronome.MetronomeEngine",
+            deploymentTargets: .macOS("26.0"),
+            buildableFolders: [
+                "Sources",
+                "Resources",
+            ]
         ),
         .target(
             name: "MetronomeEngineTestSupport",
-            destinations: .iOS,
-            product: .framework,
-            bundleId: "com.alexshubin.MetronomeEngineTestSupport",
-            deploymentTargets: .iOS("26.0"),
-            sources: ["TestSupport/**"],
+            destinations: .macOS,
+            product: .staticFramework,
+            bundleId: "com.alexshubin.Metronome.MetronomeEngineTestSupport",
+            deploymentTargets: .macOS("26.0"),
+            buildableFolders: [
+                "TestSupport",
+            ],
             dependencies: [
                 .target(name: "MetronomeEngine"),
             ]
         ),
         .target(
             name: "MetronomeEngineTests",
-            destinations: .iOS,
+            destinations: .macOS,
             product: .unitTests,
-            bundleId: "com.alexshubin.MetronomeEngineTests",
-            deploymentTargets: .iOS("26.0"),
-            sources: ["Tests/**"],
+            bundleId: "com.alexshubin.Metronome.MetronomeEngineTests",
+            deploymentTargets: .macOS("26.0"),
+            buildableFolders: [
+                "Tests",
+            ],
             dependencies: [
                 .target(name: "MetronomeEngine"),
             ]

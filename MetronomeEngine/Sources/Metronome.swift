@@ -13,40 +13,36 @@ public protocol MetronomeType: Actor {
     func changeClickSample(to clickSample: ClickSample)
 
     var metronomeStateStream: AsyncStream<MetronomeState> { get }
+
+    /// Position of the playhead within the current bar, from 0 to 1.
+    nonisolated var progressWithinBar: Double { get }
 }
 
 public struct MetronomeState: Sendable {
     public var tempo: Double
     public var isPlaying: Bool
-    public var progressWithinBar: Double
     public var clickSample: ClickSample
 
     public init(
         tempo: Double,
         isPlaying: Bool,
-        progressWithinBar: Double,
         clickSample: ClickSample = .classic
     ) {
         self.tempo = tempo
         self.isPlaying = isPlaying
-        self.progressWithinBar = progressWithinBar
         self.clickSample = clickSample
     }
 }
 
 actor Metronome: MetronomeType {
     private let metronomeEngine: MetronomeEngineType
-    private let displayLink: DisplayLinkTickerType
 
     let metronomeStateStream: AsyncStream<MetronomeState>
     private let metronomeStateContinuation: AsyncStream<MetronomeState>.Continuation
 
-    private var barLength: Double = 0
-
     private var metronomeState = MetronomeState(
         tempo: 120,
         isPlaying: false,
-        progressWithinBar: 0,
         clickSample: .classic
     ) {
         didSet {
@@ -54,32 +50,20 @@ actor Metronome: MetronomeType {
         }
     }
 
-    init(metronomeEngine: MetronomeEngineType, displayLink: DisplayLinkTickerType) {
+    nonisolated var progressWithinBar: Double {
+        metronomeEngine.progressWithinBar
+    }
+
+    init(metronomeEngine: MetronomeEngineType) {
         self.metronomeEngine = metronomeEngine
-        self.displayLink = displayLink
 
         (metronomeStateStream, metronomeStateContinuation) = AsyncStream<MetronomeState>.makeStream()
 
-        let task = Task { [weak self] in
-            await self?.startObservingTicker()
-        }
-
-        metronomeStateContinuation.onTermination = { _ in
-            task.cancel()
-        }
+        metronomeStateContinuation.yield(metronomeState)
     }
 
     isolated deinit {
         metronomeStateContinuation.finish()
-    }
-
-    private func startObservingTicker() async {
-        metronomeStateContinuation.yield(metronomeState)
-        for await _ in displayLink.ticks {
-            guard barLength > 0 else { continue }
-            metronomeState.progressWithinBar = metronomeEngine.sampleTime
-                .truncatingRemainder(dividingBy: barLength) / barLength
-        }
     }
 
     func play() {
@@ -90,7 +74,6 @@ actor Metronome: MetronomeType {
     func stop() {
         metronomeState.isPlaying = false
         metronomeEngine.stop()
-        displayLink.pause()
     }
 
     func changeTempo(to bpm: Double) {
@@ -108,7 +91,6 @@ actor Metronome: MetronomeType {
     }
 
     private func startPlayback() {
-        barLength = metronomeEngine.play(bpm: metronomeState.tempo, clickSample: metronomeState.clickSample)
-        displayLink.resume()
+        metronomeEngine.play(bpm: metronomeState.tempo, clickSample: metronomeState.clickSample)
     }
 }

@@ -17,10 +17,6 @@ struct Dependencies {
     @MainActor func makeMetronomeViewModel() -> MetronomeViewModelType {
         MetronomeViewModel(metronome: metronome)
     }
-
-    @MainActor func makeSettingsViewModel() -> SettingsViewModelType {
-        SettingsViewModel()
-    }
 }
 
 // MARK: - Environment

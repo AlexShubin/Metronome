@@ -13,8 +13,9 @@ struct MetronomeApp: App {
     @Environment(\.dependencies) private var dependencies
 
     var body: some Scene {
-        WindowGroup {
+        Window("Metronome", id: "metronome") {
             MetronomeView(viewModel: dependencies.makeMetronomeViewModel())
         }
+        .windowResizability(.contentSize)
     }
 }

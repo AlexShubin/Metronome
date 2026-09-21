@@ -10,9 +10,6 @@ public struct Dependencies: Sendable {
     public static let live = Dependencies()
 
     public func makeMetronome() -> MetronomeType {
-        Metronome(
-            metronomeEngine: MetronomeEngine(),
-            displayLink: DisplayLinkTicker()
-        )
+        Metronome(metronomeEngine: MetronomeEngine())
     }
 }
